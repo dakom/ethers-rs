@@ -13,3 +13,5 @@ Then you can build the example locally with:
     yarn serve
 
 and then visiting http://localhost:8080 in a browser should run the example!
+
+to use metamask, visit http://localhost:8080?wallet=metamask (NOT ACTUALLY WORKING YET)

@@ -24,6 +24,9 @@ serde_derive = "1.0.137"
 wasm-bindgen-futures = "0.4.30"
 serde_json = "1.0.64"
 wasm-bindgen = { version = "0.2.80", features = ["serde-serialize"] }
+js-sys = "0.3.57"
+async-trait = "0.1.56"
+thiserror = "1.0.31"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -40,7 +43,7 @@ wee_alloc = { version = "0.4.5", optional = true }
 
 serde = { version = "1.0.126", features = ["derive"] }
 hex = "0.4.3"
-web-sys = "0.3.57"
+web-sys = { version = "0.3.57", features = ["Window", "Location", "Url", "UrlSearchParams", "console"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.30"

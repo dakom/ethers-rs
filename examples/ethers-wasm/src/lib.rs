@@ -1,4 +1,5 @@
 #![allow(clippy::all)]
+#![allow(warnings)]
 
 use std::sync::Arc;
 
@@ -14,6 +15,7 @@ use ethers::{
 use crate::utils::SIMPLECONTRACT_BIN;
 
 pub mod utils;
+pub mod metamask;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -26,6 +28,8 @@ macro_rules! log {
         web_sys::console::log_1(&format!( $( $t )* ).into());
     }
 }
+pub(crate) use log;
+
 abigen!(
     SimpleContract,
     "./../contract_abi.json",
@@ -41,13 +45,25 @@ pub async fn deploy() {
         &JsValue::from_serde(&*SIMPLECONTRACT_ABI).unwrap(),
     );
 
-    let wallet = utils::key(0);
-    log!("Wallet: {:?}", wallet);
+    let client = match get_wallet_kind() {
+        WalletKind::Local => {
+            log!("local client");
+            let wallet = utils::key(0);
+            log!("Wallet: {:?}", wallet);
 
-    let endpoint = "ws://127.0.0.1:8545";
-    let provider = Provider::new(Ws::connect(endpoint).await.unwrap());
-    let client = Arc::new(SignerMiddleware::new(provider, wallet));
-    log!("Provider connected to `{}`", endpoint);
+            let endpoint = "ws://127.0.0.1:8545";
+            let provider = Provider::new(Ws::connect(endpoint).await.unwrap());
+            log!("Provider connected to `{}`", endpoint);
+            
+            Arc::new(SignerMiddleware::new(provider, wallet))
+        },
+        WalletKind::Metamask => {
+            log!("metamask client");
+            //metamask::proof_of_concept().await;
+            return;
+        }
+    };
+
 
     let bytecode = hex::decode(SIMPLECONTRACT_BIN).unwrap();
     let factory = ContractFactory::new(SIMPLECONTRACT_ABI.clone(), bytecode.into(), client.clone());
@@ -73,4 +89,25 @@ pub async fn deploy() {
         &format!("Value: `{}`. Logs: ", value).into(),
         &JsValue::from_serde(&logs).unwrap(),
     );
+}
+
+#[derive(Debug)]
+enum WalletKind {
+    Metamask,
+    Local 
+}
+
+fn get_wallet_kind() -> WalletKind {
+    let url = web_sys::Url::new(
+        &web_sys::window()
+            .unwrap()
+            .location()
+            .href()
+            .unwrap()
+    ).unwrap();
+
+    match url.search_params().get("wallet") {
+        None => WalletKind::Local,
+        Some(kind) => if kind == "metamask" { WalletKind::Metamask } else { WalletKind::Local }
+    }
 }
